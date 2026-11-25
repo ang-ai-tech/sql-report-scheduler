@@ -1,0 +1,38 @@
+title: Cancelled and refunded orders
+description: Yesterday's cancelled and refunded orders, for the customer service team to follow up.
+connection: demo_shop
+
+# Monday to Friday at 9:00
+schedule: "0 9 * * 1-5"
+
+params:
+  start_date: yesterday
+  end_date: yesterday
+
+query: |
+  select o.order_id                               as order_id,
+         o.order_date                             as order_date,
+         c.email                                  as customer_email,
+         c.country_code                           as country,
+         o.status                                 as status,
+         round(sum(i.quantity * i.unit_price), 2) as amount
+  from orders o
+  join customers c   on c.customer_id = o.customer_id
+  join order_items i on i.order_id = o.order_id
+  where o.status in ('cancelled', 'refunded')
+    and o.order_date between :start_date and :end_date
+  group by o.order_id, o.order_date, c.email, c.country_code, o.status
+  order by o.order_id
+
+template: templates/cancelled_orders.xlsx
+total_columns: [amount]
+
+email:
+  to: [customer-service@example.com]
+  subject: "Cancelled and refunded orders of {{ start_date }} ({{ rows }})"
+  body: |
+    Hello,
+
+    there are {{ rows }} cancelled or refunded orders from {{ start_date }}: details attached.
+
+    This e-mail was sent automatically by the report scheduler.

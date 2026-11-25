@@ -1,0 +1,10 @@
+# Database connections, as SQLAlchemy URLs. Reports refer to them by name.
+# Use ${VARIABLE} for user names and passwords: they are read from the environment (.env),
+# so no secret is ever written in this file.
+connections:
+  demo_shop: "sqlite:///data/demo_shop.db"
+
+  # Examples (install the matching driver first):
+  # sales_dw:   "mssql+pyodbc://${MSSQL_USER}:${MSSQL_PASSWORD}@sqlserver/SalesDW?driver=ODBC+Driver+18+for+SQL+Server"
+  # warehouse:  "postgresql+psycopg://${PG_USER}:${PG_PASSWORD}@postgres:5432/warehouse"
+  # analytics:  "duckdb:///../ecommerce-analytics-engineering/data/warehouse.duckdb"

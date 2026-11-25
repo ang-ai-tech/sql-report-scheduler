@@ -1,0 +1,9 @@
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.env
+# Generated: demo database, run history and created reports
+data/
+output/

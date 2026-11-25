@@ -1,0 +1,38 @@
+title: Monthly summary by country
+description: Customers, orders and revenue of last month by country.
+connection: demo_shop
+
+# The first day of every month at 7:00
+schedule: "0 7 1 * *"
+
+params:
+  start_date: last_month_start
+  end_date: last_month_end
+
+query: |
+  select c.country_code                                   as country,
+         count(distinct o.customer_id)                    as customers,
+         count(distinct o.order_id)                       as orders,
+         round(sum(i.quantity * i.unit_price), 2)         as revenue,
+         round(sum(i.quantity * i.unit_price)
+               / count(distinct o.order_id), 2)           as average_order
+  from orders o
+  join customers c   on c.customer_id = o.customer_id
+  join order_items i on i.order_id = o.order_id
+  where o.status = 'completed'
+    and o.order_date between :start_date and :end_date
+  group by c.country_code
+  order by revenue desc
+
+template: templates/monthly_countries.xlsx
+total_columns: [customers, orders, revenue]
+
+email:
+  to: [management@example.com]
+  subject: "Monthly summary by country - {{ start_date }} to {{ end_date }}"
+  body: |
+    Hello,
+
+    attached is last month's summary by country ({{ rows }} countries).
+
+    This e-mail was sent automatically by the report scheduler.

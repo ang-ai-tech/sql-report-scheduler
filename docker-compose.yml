@@ -1,0 +1,49 @@
+# Demo: the scheduler, the web interface and Mailpit, a fake mail server.
+# Every e-mail is caught by Mailpit: open http://localhost:8025 to read it.
+x-app: &app
+  build: .
+  image: report-scheduler:local
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    SMTP_HOST: mailpit
+    SMTP_PORT: "1025"
+    REPORTS_TIMEZONE: ${REPORTS_TIMEZONE:-Europe/Rome}
+  volumes:
+    - reports-data:/app/data
+    - reports-output:/app/output
+
+services:
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    ports:
+      - "8025:8025"   # web inbox
+
+  setup:
+    <<: *app
+    command: ["reports", "demo"]   # fresh demo database, with orders up to yesterday
+
+  scheduler:
+    <<: *app
+    # --run-now sends every report once at start, so the demo shows e-mails immediately
+    command: ["reports", "schedule", "--run-now"]
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
+
+  ui:
+    <<: *app
+    command: ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.headless=true"]
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    ports:
+      - "8505:8501"
+
+volumes:
+  reports-data:
+  reports-output:

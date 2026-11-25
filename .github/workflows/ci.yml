@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      # A fake mail server: the end-to-end test sends a real e-mail to it
+      mailpit:
+        image: axllent/mailpit:v1.33.1
+        ports:
+          - 1025:1025
+          - 8025:8025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: pytest
+
+      - name: End-to-end - create a report and send it by e-mail
+        env:
+          SMTP_HOST: localhost
+          SMTP_PORT: "1025"
+        run: |
+          reports demo
+          reports list
+          reports run weekly_sales_by_category
+
+      - name: Check that the e-mail arrived with the Excel attached
+        run: |
+          curl -s http://localhost:8025/api/v1/messages > messages.json
+          python -c "import json; m = json.load(open('messages.json'))['messages']; \
+            assert len(m) == 1 and m[0]['Attachments'] == 1, m; print(m[0]['Subject'])"

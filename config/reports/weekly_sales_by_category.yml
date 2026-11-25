@@ -1,0 +1,37 @@
+title: Weekly sales by category
+description: Completed orders of last week (Monday to Sunday) by product category.
+connection: demo_shop
+
+# Every Monday at 8:00 (minute hour day-of-month month day-of-week)
+schedule: "0 8 * * 1"
+
+params:
+  start_date: last_week_start
+  end_date: last_week_end
+
+query: |
+  select p.category                               as category,
+         count(distinct o.order_id)               as orders,
+         sum(i.quantity)                          as units,
+         round(sum(i.quantity * i.unit_price), 2) as revenue
+  from orders o
+  join order_items i on i.order_id = o.order_id
+  join products p    on p.product_id = i.product_id
+  where o.status = 'completed'
+    and o.order_date between :start_date and :end_date
+  group by p.category
+  order by revenue desc
+
+template: templates/weekly_sales.xlsx
+total_columns: [orders, units, revenue]
+
+email:
+  to: [sales-team@example.com]
+  cc: [management@example.com]
+  subject: "Weekly sales by category {{ start_date }} - {{ end_date }}"
+  body: |
+    Hello,
+
+    please find attached the sales by category from {{ start_date }} to {{ end_date }}.
+
+    This e-mail was sent automatically by the report scheduler.
